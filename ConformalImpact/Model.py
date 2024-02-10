@@ -2,7 +2,7 @@
 from MFLES.Forecaster import MFLES
 import pandas as pd
 import numpy as np
-import scipy.stats as st
+import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_style('darkgrid')
 
@@ -18,7 +18,14 @@ class CI():
         self.opt_steps = opt_steps
         self.opt_step_size = opt_step_size
 
-    def fit(self, data, intervention_index, n_windows=30, fit_intercept=True, seasonal_period=None):
+    def fit(self,
+            data,
+            intervention_index,
+            n_windows=30,
+            fit_intercept=True,
+            seasonal_period=None,
+            exogenous_estimator=None,
+            exogenous_params=None):
         data = data.copy()
         index = data.index
         intervention = list(index).index(intervention_index)
@@ -32,17 +39,33 @@ class CI():
         train_X, test_X = X[:intervention], X[intervention:]
         train_y, test_y = y[:intervention], y[intervention:]
 
-        configs = {
-            'X': [train_X],
-            'seasonality_weights': [True, False],
-            'multiplicative': [True, False],
-            'smoother': [True, False],
-            'max_rounds': [3, 5, 7, 10, 20],
-            'exogenous_lr': [.2, .5, .7, .9, 1],
-            'seasonal_lr': [0, .2, .5, .7, .9, 1],
-            'seasonal_period': [seasonal_period],
-            }
+        if exogenous_estimator is None:
+            configs = {
+                'X': [train_X],
+                'seasonality_weights': [True, False],
+                'multiplicative': [True, False],
+                'smoother': [True, False],
+                'max_rounds': [3, 5, 7, 10, 20],
+                'exogenous_lr': [.2, .5, .7, .9, 1],
+                'seasonal_lr': [0, .2, .5, .7, .9, 1],
+                'seasonal_period': [seasonal_period],
+                }
+        else:
+            configs = {
+                'X': [train_X],
+                'seasonality_weights': [True, False],
+                'multiplicative': [True, False],
+                'smoother': [True, False],
+                'max_rounds': [3, 5, 7, 10, 20],
+                'exogenous_lr': [.2, .5, .7, .9, 1],
+                'seasonal_lr': [0, .2, .5, .7, .9, 1],
+                'seasonal_period': [seasonal_period],
+                'exogenous_estimator': [exogenous_estimator],
+                'exogenous_params': [exogenous_params]
+                }
         self.model = MFLES()
+
+
         self.opt_params = self.model.optimize(train_y,
                                     test_size=self.opt_size,
                                     n_steps=self.opt_steps,
@@ -72,7 +95,6 @@ class CI():
         data['average_impact'] = np.mean(impact)
         data['residuals'] = data['y'] - data['yhat']
         data['intervention_index'] = intervention_index
-        self.impact_ci = st.norm.interval(alpha=0.95, loc=np.mean(impact), scale=st.sem(impact))
         self.data = data
         self.impact = impact
         return data

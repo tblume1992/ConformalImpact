@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ConformalImpact",
-    version="0.0.1",
+    version="0.0.3",
     author="Tyler Blume",
     url="https://github.com/tblume1992/ConformalImpact",
     long_description=long_description,
